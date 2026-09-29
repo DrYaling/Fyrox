@@ -661,6 +661,8 @@ pub enum OsEvent {
         /// Text of the key.
         text: String,
     },
+    /// Text committed by the operating system input method (IME).
+    TextInput(String),
     /// Keyboard modifier event (used for key combinations such as Ctrl+A, Ctrl+C, etc).
     KeyboardModifiers(KeyboardModifiers),
     /// Mouse wheel event, with a tuple that stores the (x, y) offsets.

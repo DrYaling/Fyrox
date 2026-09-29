@@ -1511,6 +1511,9 @@ impl Engine {
                 params.window_attributes.clone(),
                 params.named_objects,
             )?;
+            // Enable OS input methods so committed text from Chinese, Japanese, and
+            // other IMEs is delivered as `WindowEvent::Ime::Commit`.
+            window.set_ime_allowed(true);
             let frame_size = (window.inner_size().width, window.inner_size().height);
 
             let renderer = Renderer::new(server, frame_size, &self.resource_manager)?;

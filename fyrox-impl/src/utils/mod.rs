@@ -44,7 +44,10 @@ use fyrox_ui::message::CursorIcon;
 use half::f16;
 use std::collections::VecDeque;
 use std::{any::Any, sync::Arc};
-use winit::{event::Touch, keyboard::PhysicalKey};
+use winit::{
+    event::{Ime, Touch},
+    keyboard::PhysicalKey,
+};
 
 /// Translates `winit`'s key code to `fyrox-ui`'s key code.
 pub fn translate_key_to_ui(key: KeyCode) -> message::KeyCode {
@@ -511,21 +514,22 @@ pub fn translate_state(state: ElementState) -> ButtonState {
 /// Translates window event to fyrox-ui event.
 pub fn translate_event(event: &WindowEvent) -> Option<OsEvent> {
     match event {
-        WindowEvent::KeyboardInput { event, .. } => {
-            if let PhysicalKey::Code(key) = event.physical_key {
-                Some(OsEvent::KeyboardInput {
-                    button: translate_key_to_ui(key),
-                    state: translate_state(event.state),
-                    text: event
-                        .text
-                        .as_ref()
-                        .map(|s| s.to_string())
-                        .unwrap_or_default(),
-                })
-            } else {
-                None
-            }
-        }
+        WindowEvent::KeyboardInput { event, .. } => Some(OsEvent::KeyboardInput {
+            // IME and some virtual keyboards can report an unidentified physical
+            // key while still supplying committed text. Keep the text event alive;
+            // dropping it here makes those input methods appear completely inert.
+            button: match event.physical_key {
+                PhysicalKey::Code(key) => translate_key_to_ui(key),
+                PhysicalKey::Unidentified(_) => message::KeyCode::Unknown,
+            },
+            state: translate_state(event.state),
+            text: event
+                .text
+                .as_ref()
+                .map(|s| s.to_string())
+                .unwrap_or_default(),
+        }),
+        WindowEvent::Ime(Ime::Commit(text)) => Some(OsEvent::TextInput(text.clone())),
         WindowEvent::CursorMoved { position, .. } => Some(OsEvent::CursorMoved {
             position: Vector2::new(position.x as f32, position.y as f32),
         }),
@@ -853,5 +857,21 @@ impl<T> ThreadSafeQueue<T> {
 impl<T: PartialEq> PartialEq for ThreadSafeQueue<T> {
     fn eq(&self, other: &Self) -> bool {
         *self.0.safe_lock() == *other.0.safe_lock()
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::translate_event;
+    use fyrox_ui::message::OsEvent;
+    use winit::event::{Ime, WindowEvent};
+
+    #[test]
+    fn translates_committed_ime_text() {
+        let event = WindowEvent::Ime(Ime::Commit("中文".to_string()));
+        assert!(matches!(
+            translate_event(&event),
+            Some(OsEvent::TextInput(text)) if text == "中文"
+        ));
     }
 }

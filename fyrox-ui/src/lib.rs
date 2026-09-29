@@ -3014,6 +3014,16 @@ impl UserInterface {
                     }
                 }
             }
+            OsEvent::TextInput(text) => {
+                if !text.is_empty() {
+                    if let Ok(keyboard_focus_node) = self.try_get_node(self.keyboard_focus_node) {
+                        if keyboard_focus_node.is_globally_visible() {
+                            self.post(self.keyboard_focus_node, WidgetMessage::Text(text.clone()));
+                            event_processed = true;
+                        }
+                    }
+                }
+            }
             &OsEvent::KeyboardModifiers(modifiers) => {
                 // TODO: Is message needed for focused node?
                 self.keyboard_modifiers = modifiers;
@@ -4124,6 +4134,15 @@ mod test_inner {
             Some(UiMessage::from_widget(
                 text_box,
                 WidgetMessage::Text('A'.to_string())
+            ))
+        );
+
+        ui.process_os_event(&OsEvent::TextInput("中文".to_string()));
+        assert_eq!(
+            ui.poll_message(),
+            Some(UiMessage::from_widget(
+                text_box,
+                WidgetMessage::Text("中文".to_string())
             ))
         );
 
