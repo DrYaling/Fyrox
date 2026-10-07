@@ -1134,6 +1134,10 @@ impl Editor {
                     focus_content: true,
                 },
             );
+        } else {
+            editor.message_sender.send(Message::Configure {
+                working_directory: std::env::current_dir().unwrap(),
+            });
         }
 
         for path in startup_scenes.iter() {
@@ -2762,7 +2766,7 @@ impl Editor {
                     }
                     Message::ShowDocumentation(doc) => {
                         self.doc_window
-                            .open(doc, self.engine.user_interfaces.first());
+                            .open(doc, self.engine.user_interfaces.first_mut());
                     }
                     Message::SaveLayout => {
                         self.save_layout();

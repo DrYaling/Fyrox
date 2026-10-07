@@ -1572,6 +1572,7 @@ pub struct TextBoxBuilder<'a> {
     selection_brush: Brush,
     filter: Option<TextBoxFilter>,
     vertical_alignment: VerticalAlignment,
+    baseline_alignment: VerticalAlignment,
     horizontal_alignment: HorizontalAlignment,
     wrap: WrapMode,
     commit_mode: TextCommitMode,
@@ -1601,6 +1602,7 @@ impl<'a> TextBoxBuilder<'a> {
             selection_brush: Brush::Solid(Color::opaque(80, 118, 178)),
             filter: None,
             vertical_alignment: VerticalAlignment::Top,
+            baseline_alignment: VerticalAlignment::Bottom,
             horizontal_alignment: HorizontalAlignment::Left,
             wrap: WrapMode::NoWrap,
             commit_mode: TextCommitMode::LostFocusPlusEnter,
@@ -1664,6 +1666,13 @@ impl<'a> TextBoxBuilder<'a> {
     /// Sets the desired vertical text alignment of the text box.
     pub fn with_vertical_text_alignment(mut self, alignment: VerticalAlignment) -> Self {
         self.vertical_alignment = alignment;
+        self
+    }
+
+    /// Sets the desired baseline alignment. Baseline alignment defines how the glyphs will be aligned
+    /// in each line of the text.
+    pub fn with_baseline_alignment(mut self, baseline_alignment: VerticalAlignment) -> Self {
+        self.baseline_alignment = baseline_alignment;
         self
     }
 
@@ -1807,6 +1816,7 @@ impl<'a> TextBoxBuilder<'a> {
                     .with_shadow_offset(self.shadow_offset)
                     .with_padding(self.padding)
                     .with_trim_text(self.trim_text)
+                    .with_baseline_alignment(self.baseline_alignment)
                     .with_font_size(
                         self.font_size
                             .unwrap_or_else(|| ctx.style.property(Style::FONT_SIZE)),

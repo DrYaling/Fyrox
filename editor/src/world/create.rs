@@ -335,7 +335,14 @@ impl EntityCreator {
             let recent_item = make_recent_item(ui, &ImmutableString::new(recent_entity));
             new_items.push(recent_item);
         }
-        ui.send(self.recent_list, ListViewMessage::Items(new_items))
+        ui.send(self.recent_list, ListViewMessage::Items(new_items));
+        if let Some(most_recent_entity) = scene_settings.recently_created_entities.first() {
+            ui.send(self.recent_list, ListViewMessage::Selection(vec![0]));
+            ui.send(
+                self.search_bar,
+                SearchBarMessage::Text(most_recent_entity.clone()),
+            );
+        }
     }
 
     fn has_recent_item(&self, ui: &UserInterface, name: &str) -> bool {
@@ -379,13 +386,20 @@ impl EntityCreator {
         let variant = constructors.try_get_variant(constructor_id)?;
         if !self.has_recent_item(ui, variant.name.as_str()) {
             let recent_item = make_recent_item(ui, &variant.name);
-            ui.send(self.recent_list, ListViewMessage::AddItem(recent_item));
+            ui.send(
+                self.recent_list,
+                ListViewMessage::AddItem {
+                    node: recent_item,
+                    in_front: true,
+                },
+            );
             if let Some(scene_settings) =
                 scene_path.and_then(|p| settings.scene_settings.get_mut(p))
             {
+                // Insert at the top.
                 scene_settings
                     .recently_created_entities
-                    .push(variant.name.as_str().to_owned());
+                    .insert(0, variant.name.as_str().to_owned());
             }
         }
         Some((variant.constructor)(ctx))
@@ -448,6 +462,8 @@ impl EntityCreator {
                     ScrollViewerMessage::BringIntoView(first.to_base()),
                 );
             }
+
+            ui.send(self.recent_list, ListViewMessage::Selection(vec![]));
         }
     }
 
@@ -613,12 +629,8 @@ impl EntityCreator {
                     };
                     sender.do_command(AddWidgetCommand::new(sub_graph, parent, true));
                 }
-                EntityCreatorMode::CreateParent => {
-                    // TODO
-                }
-                EntityCreatorMode::CreateReplacement => {
-                    // TODO
-                }
+                // The rest is unsupported.
+                _ => (),
             }
         }
     }
